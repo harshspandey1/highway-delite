@@ -1,7 +1,6 @@
-// server/src/controllers/experienceController.ts
 import { Request, Response } from 'express';
 import Experience from '../models/Experience';
-import Slot from '../models/Slot'; // Import Slot model
+import Slot from '../models/Slot'; 
 
 /**
  * @desc    Get all experiences (with optional search)
@@ -57,16 +56,21 @@ export const getExperienceById = async (req: Request, res: Response) => {
  */
 export const getExperienceSlots = async (req: Request, res: Response) => {
   try {
+    // 💡 FIX: Calculate the start of the current day in UTC
+    // This ensures slots for the current day are returned, compensating for timezone differences.
+    const startOfTodayUTC = new Date();
+    startOfTodayUTC.setUTCHours(0, 0, 0, 0); 
+
     const slots = await Slot.find({ 
       experienceId: req.params.id,
-      startTime: { $gte: new Date() } 
+      // Check that the slot start time is greater than or equal to the start of today (UTC)
+      startTime: { $gte: startOfTodayUTC } 
     }).sort({ startTime: 1 }); 
 
 
     if (slots) { 
       res.status(200).json(slots); 
     } 
-    // No need for an else here, as an empty array is a valid response
   } catch (error: any) {
     console.error(`--- BACKEND Error (getExperienceSlots): ${error.message} ---`);
     res.status(500).json({ message: `Server Error: ${error.message}` });
