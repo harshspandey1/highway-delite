@@ -16,7 +16,9 @@ type Experience = {
   mainImage: string;
   duration: string;
 };
+// 💡 IMPORTANT: Ensure BASE_URL is correctly defined and used here
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 type Slot = {
   _id: string;
   experienceId: string;
@@ -28,7 +30,6 @@ type Slot = {
 // --- Helper Functions ---
 async function getExperience(id: string): Promise<Experience | null> {
   try {
-    // Use localhost
     const res = await fetch(`${BASE_URL}/api/experiences/${id}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch experience');
     return res.json();
@@ -40,8 +41,8 @@ async function getExperience(id: string): Promise<Experience | null> {
 
 async function getSlots(id: string): Promise<Slot[]> {
   try {
-    // Use localhost
-    const res = await fetch(`http://localhost:5001/api/experiences/${id}/slots`, { cache: 'no-store' });
+    // ✅ FIX APPLIED HERE: Use BASE_URL instead of hardcoded localhost
+    const res = await fetch(`${BASE_URL}/api/experiences/${id}/slots`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch slots');
     return res.json();
   } catch (error) {
@@ -51,8 +52,11 @@ async function getSlots(id: string): Promise<Slot[]> {
 }
 
 // --- Utility Functions ---
+// Note: You may encounter an issue with the Date(dateString + 'T00:00:00') formatting logic in the original file. 
+// Standardized usage below:
+
 const formatDate = (dateString: string): string => {
-  const date = new Date(dateString + 'T00:00:00');
+  const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
@@ -64,6 +68,7 @@ const formatTime = (dateString: string): string => {
 export default function ExperienceDetailsPage() {
   const [experience, setExperience] = useState<Experience | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
+  // 💡 FIX: Initialize selectedDate to the first available date key (Nov 27, 2025)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,7 +79,6 @@ export default function ExperienceDetailsPage() {
 
   // Fetch data
   useEffect(() => {
-    // Check if ID is valid before fetching
     if (id && id !== "undefined") {
       const fetchData = async () => {
         setIsLoading(true);
@@ -85,6 +89,12 @@ export default function ExperienceDetailsPage() {
           ]);
           setExperience(expData);
           setSlots(slotData);
+
+          // 💡 CRITICAL FIX: Set the default selected date to the first available slot date
+          if (slotData.length > 0) {
+             const firstDateKey = slotData[0].startTime.split('T')[0];
+             setSelectedDate(firstDateKey);
+          }
         } catch (error) {
             console.error("Failed to fetch details data:", error);
             setExperience(null);
@@ -95,10 +105,9 @@ export default function ExperienceDetailsPage() {
       };
       fetchData();
     } else if (id) {
-        // Handle the case where id is initially "undefined"
       setIsLoading(false);
     }
-  }, [id]); // Dependency array ensures fetch runs when ID is available
+  }, [id]);
 
   // Memoized calculations
   const slotsByDate = useMemo(() => {
@@ -111,7 +120,7 @@ export default function ExperienceDetailsPage() {
   }, [slots]);
 
   const availableDates = useMemo(() =>
-    slotsByDate ? Object.keys(slotsByDate).sort() : [], // Safely get keys
+    slotsByDate ? Object.keys(slotsByDate).sort() : [],
   [slotsByDate]);
 
   const timeSlotsForSelectedDate = useMemo(() =>
@@ -120,7 +129,7 @@ export default function ExperienceDetailsPage() {
 
   const isConfirmEnabled = selectedDate !== null && selectedSlotId !== null;
 
-  // Handlers
+  // Handlers (kept the same)
   const handleDateSelect = (dateKey: string) => {
     setSelectedDate(dateKey);
     setSelectedSlotId(null);
@@ -151,17 +160,11 @@ export default function ExperienceDetailsPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
+      {/* Header (omitted for brevity) */}
       <header className="w-full bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <nav className="flex items-center justify-between h-[87px] max-w-[1440px] mx-auto px-[124px] py-4">
           <Link href="/" className="flex items-center">
-            <Image
-              src="/logo.png" 
-              alt="Highway Delite Logo"
-              width={100} 
-              height={30} 
-              priority 
-            />
+            <Image src="/logo.png" alt="Highway Delite Logo" width={100} height={30} priority />
           </Link>
           <div className="flex items-center gap-2">
             <input type="text" placeholder="Search experience" className="px-4 py-2 border border-gray-300 rounded-lg"/>
@@ -169,7 +172,6 @@ export default function ExperienceDetailsPage() {
           </div>
         </nav>
       </header>
-
       {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-[124px] py-12 flex-grow">
         <Link href="/" className="text-sm font-medium text-gray-600 mb-4 inline-block">&larr; Back to Experiences</Link>
@@ -192,10 +194,12 @@ export default function ExperienceDetailsPage() {
             <div>
               <h3 className="text-lg font-semibold mb-4">Choose date</h3>
               <div className="flex flex-wrap gap-2 mb-6">
+                {/* Available Date Buttons */}
                 {availableDates.length > 0 ? availableDates.map(dateKey => (
                   <button key={dateKey} onClick={() => handleDateSelect(dateKey)} className={`px-4 py-2 rounded-md border text-sm font-medium ${selectedDate === dateKey ? 'bg-[#FFD643] border-[#FFD643]' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'}`}>{formatDate(dateKey)}</button>
                 )) : <p className="text-sm text-gray-500">No available dates.</p>}
               </div>
+              {/* Time Slot Picker */}
               {selectedDate && (
                  <div>
                     <h3 className="text-lg font-semibold mb-4">Choose time</h3>
@@ -219,7 +223,7 @@ export default function ExperienceDetailsPage() {
             <h2 className="text-xl font-semibold mb-2 pt-4">About</h2>
             <p className="text-gray-700 leading-relaxed">{experience.about}</p>
           </div>
-          {/* Right Column */}
+          {/* Right Column (Summary) */}
           <div className="lg:col-span-1">
             <div className="bg-[#F0F0F0] rounded-lg p-6 shadow-md sticky top-[115px]">
               <h2 className="text-xl font-bold mb-4">Summary</h2>
@@ -230,7 +234,7 @@ export default function ExperienceDetailsPage() {
                 <hr className="border-gray-400 my-3"/>
                 <div className="flex justify-between text-lg font-bold"><span>Total</span><span>₹{total.toFixed(0)}</span></div>
               </div>
-              <button disabled={!isConfirmEnabled} onClick={handleConfirm} className={`w-full text-black rounded-lg py-3 font-semibold transition-colors ${ isConfirmEnabled ? 'bg-[#FFD643] hover:bg-[#FFD643]/90' : 'bg-gray-300 cursor-not-allowed'}`}>
+              <button disabled={!isConfirmEnabled} onClick={handleConfirm} className={`w-full text-black rounded-lg py-3 font-semibold transition-colors ${ isConfirmEnabled ? 'bg-[#FFD643] hover:bg-[#FFD343]/90' : 'bg-gray-300 cursor-not-allowed'}`}>
                 Confirm
               </button>
             </div>
