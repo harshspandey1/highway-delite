@@ -2,11 +2,6 @@ import { Request, Response } from 'express';
 import Experience from '../models/Experience';
 import Slot from '../models/Slot'; 
 
-/**
- * @desc    Get all experiences (with optional search)
- * @route   GET /api/experiences
- * @access  Public
- */
 export const getExperiences = async (req: Request, res: Response) => {
   try {
     const searchTerm = req.query.search ? {
@@ -26,11 +21,6 @@ export const getExperiences = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * @desc    Get a single experience by ID
- * @route   GET /api/experiences/:id
- * @access  Public
- */
 export const getExperienceById = async (req: Request, res: Response) => {
   console.log(`--- BACKEND: Received request for ID: ${req.params.id} ---`);
   try {
@@ -49,21 +39,13 @@ export const getExperienceById = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * @desc    Get available slots for a single experience
- * @route   GET /api/experiences/:id/slots
- * @access  Public
- */
 export const getExperienceSlots = async (req: Request, res: Response) => {
   try {
-    // 💡 FIX: Calculate the start of the current day in UTC
-    // This ensures slots for the current day are returned, compensating for timezone differences.
     const startOfTodayUTC = new Date();
     startOfTodayUTC.setUTCHours(0, 0, 0, 0); 
 
     const slots = await Slot.find({ 
       experienceId: req.params.id,
-      // Check that the slot start time is greater than or equal to the start of today (UTC)
       startTime: { $gte: startOfTodayUTC } 
     }).sort({ startTime: 1 }); 
 
