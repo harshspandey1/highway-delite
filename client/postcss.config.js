@@ -1,8 +1,10 @@
-// client/postcss.config.js (Corrected CJS Syntax)
+// client/postcss.config.js
+// Using CommonJS module.exports for stability in Next.js build environment
 module.exports = {
   plugins: {
-    // Correct plugin name is 'tailwindcss'
+    // This is the correct plugin name for Tailwind CSS
     'tailwindcss': {},
+    // Autoprefixer for vendor prefixing
     'autoprefixer': {},
   },
 };
