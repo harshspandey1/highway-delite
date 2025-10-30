@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation'; 
 import { useState, useEffect } from 'react';
 
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 // PromoCode type for state
 type AppliedPromoCode = {
     _id: string;
@@ -66,7 +68,7 @@ export default function CheckoutForm() {
       return;
     }
     try {
-      const res = await fetch('http://localhost:5001/api/promo-codes/apply', {
+      const res = await fetch(`${BASE_URL}/api/promo-codes/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: promoCodeInput.trim().toUpperCase() }),
@@ -102,7 +104,7 @@ export default function CheckoutForm() {
         totalPrice: finalTotal,
         promoCode: appliedPromoCode ? appliedPromoCode._id : undefined, 
       };
-      const res = await fetch('http://localhost:5001/api/bookings', {
+      const res = await fetch(`${BASE_URL}/api/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bookingData),

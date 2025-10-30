@@ -16,7 +16,7 @@ type Experience = {
   mainImage: string;
   duration: string;
 };
-
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 type Slot = {
   _id: string;
   experienceId: string;
@@ -29,7 +29,7 @@ type Slot = {
 async function getExperience(id: string): Promise<Experience | null> {
   try {
     // Use localhost
-    const res = await fetch(`http://localhost:5001/api/experiences/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${BASE_URL}/api/experiences/${id}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch experience');
     return res.json();
   } catch (error) {

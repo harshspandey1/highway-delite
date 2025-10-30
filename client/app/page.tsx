@@ -14,12 +14,12 @@ type Experience = {
   mainImage: string;
   duration: string;
 };
-
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 // Fetch Function
 async function getExperiences(searchTerm: string) {
   try {
     // Use localhost
-    const res = await fetch(`http://localhost:5001/api/experiences?search=${searchTerm}`, {
+    const res = await fetch(`${BASE_URL}/api/experiences?search=${searchTerm}`, {
       cache: 'no-store', 
     });
     if (!res.ok) {
