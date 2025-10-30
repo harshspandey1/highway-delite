@@ -6,6 +6,9 @@ This project simulates an end-to-end **experience booking system**, from listing
 
 ---
 
+**Live URL:** [https://highway-delite-eta-rose.vercel.app/](https://highway-delite-eta-rose.vercel.app/)  
+
+
 ## ✨ Features
 
 | Category | Description |
@@ -29,6 +32,7 @@ This project simulates an end-to-end **experience booking system**, from listing
 - **Deployment:** [Vercel](https://vercel.com/)
 
 ### Backend (Server)
+Live API Base URL: https://highway-delite-production-e4f3.up.railway.app
 - **Runtime:** Node.js + Express
 - **Language:** TypeScript
 - **ORM:** Mongoose
