@@ -1,10 +1,8 @@
-// client/app/checkout/CheckoutForm.tsx (Fixed)
-
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
-import Link from "next/link"; // Added Link for back button
+import Link from "next/link";
 
 // --- Type Definitions ---
 type PromoCode = {
@@ -22,7 +20,7 @@ const BASE_URL =
 // --- Utility Functions ---
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
 const formatTime = (dateString: string): string => {
@@ -38,7 +36,6 @@ export default function CheckoutForm() {
   const title = searchParams.get("title");
   const slotId = searchParams.get("slotId");
   const startTime = searchParams.get("startTime");
-  // ✅ FIX: Get quantity directly from URL and lock it
   const quantity = Number(searchParams.get("quantity") || 1); 
   const basePrice = Number(searchParams.get("basePrice") || 0);
 
@@ -121,7 +118,7 @@ export default function CheckoutForm() {
           slotId,
           customerName,
           customerEmail,
-          quantity: quantity, // Use quantity passed from URL
+          quantity: quantity,
           totalPrice: total,
           promoCode: appliedPromoCode?._id,
         }),
@@ -148,7 +145,7 @@ export default function CheckoutForm() {
   return (
     <main className="max-w-[1440px] mx-auto px-[124px] py-12 flex-grow">
         {/* Navigation/Back Button */}
-        <Link href={`/experiences/${experienceId}`} className="text-sm font-medium text-gray-600 mb-4 inline-block">&larr; Back to Experience</Link>
+        <Link href={`/experiences/${experienceId}`} className="text-sm font-medium text-gray-600 mb-4 inline-block">&larr; Checkout</Link>
         
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             {/* Left Side: Forms (Col 1-3) */}
@@ -187,14 +184,19 @@ export default function CheckoutForm() {
                             className="flex-grow px-4 py-2 border border-gray-300 rounded-lg"
                             disabled={!!appliedPromoCode}
                         />
+                        {/* Apply button with fixed styling */}
                         <button
                             onClick={handleApplyPromoCode}
                             disabled={isSubmitting || !!appliedPromoCode}
-                            className={`px-4 py-2 rounded-lg font-semibold transition-colors text-sm ${
+                            className={`
+                                rounded-lg font-semibold transition-colors text-sm text-white
+                                h-auto w-auto px-4 py-3 
+                                ${
                                 isSubmitting || !!appliedPromoCode
-                                ? "bg-gray-400 cursor-not-allowed text-white"
-                                : "bg-blue-500 hover:bg-blue-600 text-white"
-                            }`}
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-black hover:bg-gray-800" // Black background, white text
+                                }
+                            `}
                         >
                             {appliedPromoCode ? "APPLIED" : "APPLY"}
                         </button>
@@ -233,6 +235,7 @@ export default function CheckoutForm() {
                 <div className="bg-[#F0F0F0] rounded-lg p-6 shadow-md sticky top-[115px]">
                     <h2 className="text-xl font-bold mb-4">Summary</h2>
                     
+                    {/* Summary Details */}
                     <div className="space-y-3 mb-6 border-b border-gray-300 pb-4">
                         <div className="flex justify-between"><span>Experience</span><span className="font-medium">{title}</span></div>
                         <div className="flex justify-between"><span>Date</span><span className="font-medium">{formatDate(startTime || "")}</span></div>
@@ -260,7 +263,7 @@ export default function CheckoutForm() {
                         <span>₹{total.toFixed(0)}</span>
                     </div>
 
-                    {/* Pay and Confirm Button */}
+                    {/* Pay and Confirm Button (Matches mock-up context) */}
                     <button
                         onClick={handleBooking}
                         disabled={!isConfirmEnabled || isSubmitting}
@@ -276,5 +279,5 @@ export default function CheckoutForm() {
             </div>
         </div>
       </main>
-    );
+  );
 }
