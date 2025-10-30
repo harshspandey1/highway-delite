@@ -1,16 +1,27 @@
-@import "tailwindcss";
+/* 💡 FIX: Use PostCSS Directives instead of CSS @import */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
+/* You are using a non-standard syntax here: @theme inline.
+If this syntax is related to a specific library you use (like Geist fonts) 
+that injects CSS variables, it needs to be compatible with PostCSS.
+If it's causing issues, temporarily remove or comment out non-standard directives 
+until the build is fixed.
+*/
+/*
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
+*/
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -18,4 +29,3 @@
     --foreground: #ededed;
   }
 }
-
