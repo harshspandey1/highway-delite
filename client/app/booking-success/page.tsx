@@ -12,10 +12,10 @@ export default function BookingSuccessPage() {
           <Link href="/" className="flex items-center">
             {/* Logo image setup */}
             <Image
-              src="/highway-delite-logo.png"
+              src="/logo.png"
               alt="Highway Delite Logo"
-              width={180}
-              height={50}
+              width={100}
+              height={30}
               priority
             />
           </Link>
