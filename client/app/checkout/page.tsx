@@ -1,4 +1,4 @@
-// client/app/checkout/page.tsx (Container)
+// client/app/checkout/page.tsx (Container - No Changes Needed)
 
 import Link from "next/link";
 import Image from "next/image";

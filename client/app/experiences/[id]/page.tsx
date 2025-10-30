@@ -16,9 +16,7 @@ type Experience = {
   mainImage: string;
   duration: string;
 };
-// 💡 IMPORTANT: Ensure BASE_URL is correctly defined and used here
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
 type Slot = {
   _id: string;
   experienceId: string;
@@ -41,7 +39,6 @@ async function getExperience(id: string): Promise<Experience | null> {
 
 async function getSlots(id: string): Promise<Slot[]> {
   try {
-    // ✅ FIX APPLIED HERE: Use BASE_URL instead of hardcoded localhost
     const res = await fetch(`${BASE_URL}/api/experiences/${id}/slots`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch slots');
     return res.json();
@@ -52,12 +49,9 @@ async function getSlots(id: string): Promise<Slot[]> {
 }
 
 // --- Utility Functions ---
-// Note: You may encounter an issue with the Date(dateString + 'T00:00:00') formatting logic in the original file. 
-// Standardized usage below:
-
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
 const formatTime = (dateString: string): string => {
@@ -68,9 +62,9 @@ const formatTime = (dateString: string): string => {
 export default function ExperienceDetailsPage() {
   const [experience, setExperience] = useState<Experience | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
-  // 💡 FIX: Initialize selectedDate to the first available date key (Nov 27, 2025)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1); // NEW: Quantity state
   const [isLoading, setIsLoading] = useState(true);
 
   const params = useParams();
@@ -90,7 +84,6 @@ export default function ExperienceDetailsPage() {
           setExperience(expData);
           setSlots(slotData);
 
-          // 💡 CRITICAL FIX: Set the default selected date to the first available slot date
           if (slotData.length > 0) {
              const firstDateKey = slotData[0].startTime.split('T')[0];
              setSelectedDate(firstDateKey);
@@ -127,40 +120,57 @@ export default function ExperienceDetailsPage() {
     selectedDate && slotsByDate ? slotsByDate[selectedDate] || [] : [],
   [selectedDate, slotsByDate]);
 
-  const isConfirmEnabled = selectedDate !== null && selectedSlotId !== null;
-
-  // Handlers (kept the same)
+  const selectedSlot = useMemo(() => 
+    slots.find(slot => slot._id === selectedSlotId),
+    [slots, selectedSlotId]
+  );
+  
+  const maxCapacity = selectedSlot ? selectedSlot.totalCapacity - selectedSlot.bookedCount : 10; // Use reasonable default
+  
+  // Handlers
   const handleDateSelect = (dateKey: string) => {
     setSelectedDate(dateKey);
     setSelectedSlotId(null);
+    setQuantity(1); // Reset quantity on date change
   };
   const handleTimeSelect = (slotId: string) => {
     setSelectedSlotId(slotId);
+    setQuantity(1); // Reset quantity on slot change
   };
+  
+  const handleQuantityChange = (delta: number) => {
+    setQuantity(prev => {
+      const newQty = prev + delta;
+      return Math.max(1, Math.min(newQty, maxCapacity));
+    });
+  };
+
   const handleConfirm = () => {
-    if (!isConfirmEnabled || !experience || !selectedSlotId) return;
-    const selectedSlot = slots.find(slot => slot._id === selectedSlotId);
+    if (!selectedSlot || !experience || !selectedSlotId || quantity < 1) return;
+    
     const queryParams = new URLSearchParams({
       experienceId: experience._id,
       title: experience.title,
       slotId: selectedSlotId,
-      startTime: selectedSlot ? selectedSlot.startTime : '',
+      startTime: selectedSlot.startTime,
       basePrice: experience.basePrice.toString(),
+      quantity: quantity.toString(), // NEW: Pass quantity
     });
     router.push(`/checkout?${queryParams.toString()}`);
   };
+
+  // Calculations
+  const isConfirmEnabled = selectedSlotId !== null && quantity > 0;
+  const subtotal = experience ? experience.basePrice * quantity : 0;
+  const taxes = subtotal * 0.1;
 
   // Render Logic
   if (isLoading) return <p className="text-center py-10">Loading...</p>;
   if (!experience) return <p className="text-center py-10">Experience not found.</p>;
 
-  const subtotal = experience.basePrice;
-  const taxes = subtotal * 0.1;
-  const total = subtotal + taxes;
-
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header (omitted for brevity) */}
+      {/* Header */}
       <header className="w-full bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <nav className="flex items-center justify-between h-[87px] max-w-[1440px] mx-auto px-[124px] py-4">
           <Link href="/" className="flex items-center">
@@ -172,6 +182,7 @@ export default function ExperienceDetailsPage() {
           </div>
         </nav>
       </header>
+
       {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-[124px] py-12 flex-grow">
         <Link href="/" className="text-sm font-medium text-gray-600 mb-4 inline-block">&larr; Back to Experiences</Link>
@@ -190,16 +201,15 @@ export default function ExperienceDetailsPage() {
             </div>
             <h1 className="text-3xl font-bold">{experience.title}</h1>
             <p className="text-gray-600">{experience.description}</p>
+            
             {/* --- Slot Picker --- */}
             <div>
               <h3 className="text-lg font-semibold mb-4">Choose date</h3>
               <div className="flex flex-wrap gap-2 mb-6">
-                {/* Available Date Buttons */}
                 {availableDates.length > 0 ? availableDates.map(dateKey => (
                   <button key={dateKey} onClick={() => handleDateSelect(dateKey)} className={`px-4 py-2 rounded-md border text-sm font-medium ${selectedDate === dateKey ? 'bg-[#FFD643] border-[#FFD643]' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'}`}>{formatDate(dateKey)}</button>
                 )) : <p className="text-sm text-gray-500">No available dates.</p>}
               </div>
-              {/* Time Slot Picker */}
               {selectedDate && (
                  <div>
                     <h3 className="text-lg font-semibold mb-4">Choose time</h3>
@@ -210,7 +220,7 @@ export default function ExperienceDetailsPage() {
                           const isSelected = slot._id === selectedSlotId;
                           return (
                              <button key={slot._id} onClick={() => isAvailable && handleTimeSelect(slot._id)} disabled={!isAvailable} className={`px-4 py-2 rounded-md border text-sm font-medium flex items-center justify-center gap-2 relative ${ isSelected ? 'bg-[#FFD643] border-[#FFD643]' : isAvailable ? 'bg-gray-100 border-gray-300 hover:bg-gray-200' : 'bg-gray-200 border-gray-300 text-gray-400 cursor-not-allowed opacity-60'}`}>
-                                <span className={!isAvailable ? 'line-through' : ''}>{formatTime(slot.startTime)}</span>
+                                <span>{formatTime(slot.startTime)}</span>
                                 {!isAvailable ? (<span className="text-xs text-gray-500 font-normal">(Sold out)</span>) : spotsLeft > 0 ? (<span className="text-xs text-red-600 font-semibold">({spotsLeft} left)</span>) : null}
                              </button>
                           );
@@ -220,22 +230,53 @@ export default function ExperienceDetailsPage() {
               )}
             </div>
             {/* --- End Slot Picker --- */}
+            
+            {/* --- Quantity Selector --- */}
+            {selectedSlotId && (
+              <div className="pt-6">
+                <h3 className="text-lg font-semibold mb-4">Quantity</h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                    <button 
+                      onClick={() => handleQuantityChange(-1)} 
+                      disabled={quantity <= 1} 
+                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-medium"
+                    >
+                      —
+                    </button>
+                    <span className="px-4 py-2 w-16 text-center text-lg">{quantity}</span>
+                    <button 
+                      onClick={() => handleQuantityChange(1)} 
+                      disabled={quantity >= maxCapacity} 
+                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-medium"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className="text-sm text-gray-500">Max {maxCapacity} available</span>
+                </div>
+              </div>
+            )}
+            {/* --- End Quantity Selector --- */}
+
             <h2 className="text-xl font-semibold mb-2 pt-4">About</h2>
             <p className="text-gray-700 leading-relaxed">{experience.about}</p>
           </div>
+          
           {/* Right Column (Summary) */}
           <div className="lg:col-span-1">
             <div className="bg-[#F0F0F0] rounded-lg p-6 shadow-md sticky top-[115px]">
               <h2 className="text-xl font-bold mb-4">Summary</h2>
               <div className="space-y-3 mb-6">
-                <div className="flex justify-between"><span>Starts at</span><span>₹{subtotal.toFixed(0)}</span></div>
-                <div className="flex justify-between"><span>Quantity</span><span>1</span></div>
-                <div className="flex justify-between text-gray-600"><span>Taxes</span><span>₹{taxes.toFixed(0)}</span></div>
+                <div className="flex justify-between"><span>Base Price</span><span>₹{experience.basePrice.toFixed(0)}</span></div>
+                <div className="flex justify-between"><span>Quantity</span><span>{quantity}</span></div>
+                <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>₹{subtotal.toFixed(0)}</span></div>
+                <div className="flex justify-between text-gray-600"><span>Taxes (10%)</span><span>₹{taxes.toFixed(0)}</span></div>
                 <hr className="border-gray-400 my-3"/>
-                <div className="flex justify-between text-lg font-bold"><span>Total</span><span>₹{total.toFixed(0)}</span></div>
+                <div className="flex justify-between text-lg font-bold"><span>Total</span><span>₹{(subtotal + taxes).toFixed(0)}</span></div>
               </div>
-              <button disabled={!isConfirmEnabled} onClick={handleConfirm} className={`w-full text-black rounded-lg py-3 font-semibold transition-colors ${ isConfirmEnabled ? 'bg-[#FFD643] hover:bg-[#FFD343]/90' : 'bg-gray-300 cursor-not-allowed'}`}>
-                Confirm
+              <button disabled={!isConfirmEnabled} onClick={handleConfirm} className={`w-full text-black rounded-lg py-3 font-semibold transition-colors ${ isConfirmEnabled ? 'bg-[#FFD643] hover:bg-[#FFD643]/90' : 'bg-gray-300 cursor-not-allowed'}`}>
+                Proceed to Checkout
               </button>
             </div>
           </div>
